@@ -145,8 +145,10 @@ if (! function_exists('e')) {
 if (! function_exists('env')) {
     /**
      * Gets the value of an environment variable.
+     * If an array of keys is provided, the function will iterate through them
+     * and return the value of the first key that is found in the environment.
      *
-     * @param  string  $key
+     * @param  string|array  $key
      * @param  mixed  $default
      * @return mixed
      */

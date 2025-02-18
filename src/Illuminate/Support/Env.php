@@ -4,6 +4,7 @@ namespace Illuminate\Support;
 
 use Dotenv\Repository\Adapter\PutenvAdapter;
 use Dotenv\Repository\RepositoryBuilder;
+use PhpOption\None;
 use PhpOption\Option;
 use RuntimeException;
 
@@ -66,9 +67,9 @@ class Env
     }
 
     /**
-     * Get the value of an environment variable.
+     * Get the value of an environment variable with optional fallback keys.
      *
-     * @param  string  $key
+     * @param  string|array  $key
      * @param  mixed  $default
      * @return mixed
      */
@@ -78,27 +79,29 @@ class Env
     }
 
     /**
-     * Get the value of a required environment variable.
+     * Get the value of a required environment variable with optional fallback keys.
      *
-     * @param  string  $key
+     * @param  string|array  $key
      * @return mixed
      *
      * @throws \RuntimeException
      */
     public static function getOrFail($key)
     {
-        return self::getOption($key)->getOrThrow(new RuntimeException("Environment variable [$key] has no value."));
+        $keyRef = is_array($key) ? reset($key) : $key;
+        return self::getOption($key)->getOrThrow(new RuntimeException("Environment variable [$keyRef] has no value."));
     }
 
     /**
-     * Get the possible option for this environment variable.
+     * Get the possible option for this environment variable with optional fallback keys.
+     * Recursively processes the array keys until a value is found.
      *
-     * @param  string  $key
+     * @param  string|array  $key
      * @return \PhpOption\Option|\PhpOption\Some
      */
     protected static function getOption($key)
     {
-        return Option::fromValue(static::getRepository()->get($key))
+        $value = Option::fromValue(static::getRepository()->get(is_array($key) ? array_shift($key) : $key))
             ->map(function ($value) {
                 switch (strtolower($value)) {
                     case 'true':
@@ -121,5 +124,12 @@ class Env
 
                 return $value;
             });
+
+
+        if (($value instanceof None || $value->get() === null) && is_array($key) && count($key) > 0) {
+            return static::getOption($key);
+        }
+
+        return $value;
     }
 }

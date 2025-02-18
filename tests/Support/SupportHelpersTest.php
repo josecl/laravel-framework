@@ -1198,6 +1198,18 @@ class SupportHelpersTest extends TestCase
         $this->assertSame('default', env('foo', 'default'));
     }
 
+    public function testEnvWithFallbackKeys()
+    {
+        $_SERVER['foo'] = 'bar';
+        $_SERVER['foo2'] = 'bar2';
+        $_SERVER['null-string'] = 'null';
+        $_SERVER['null-value'] = null;
+
+        $this->assertSame('bar', env(['doesnt-exists', 'null-string', 'foo', 'foo2']));
+        $this->assertSame('default', Env::get(['doesnt-exists', 'null-value'], 'default'));
+        $this->assertNull(env(['doesnt-exists', 'null-value','also-doesnt-exists']));
+    }
+
     public function testEnvEscapedString()
     {
         $_SERVER['foo'] = '"null"';
@@ -1224,10 +1236,18 @@ class SupportHelpersTest extends TestCase
         Env::getOrFail('required-does-not-exist');
     }
 
+    public function testRequiredEnvVariableWithFallbackKeysThrowsAnExceptionWhenNotFound(): void
+    {
+        $this->expectExceptionObject(new RuntimeException('[required-does-not-exist] has no value'));
+
+        Env::getOrFail(['required-does-not-exist', 'another-does-not-exist']);
+    }
+
     public function testRequiredEnvReturnsValue(): void
     {
         $_SERVER['required-exists'] = 'some-value';
         $this->assertSame('some-value', Env::getOrFail('required-exists'));
+        $this->assertSame('some-value', Env::getOrFail(['does-not-exist', 'required-exists']));
     }
 
     public function testLiteral(): void
